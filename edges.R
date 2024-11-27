@@ -3,9 +3,7 @@ library(sf)
 # I am adding stuff in the git cloud 
 # Set working directory and read in the data
 setwd("/Users/narctaz/Desktop/personality/cue")
-#tracking <- read.csv("all_track.csv") 
-#tracking[c('ANGLE')][sapply(tracking[c('ANGLE')], is.infinite)] <- NA 
-#tracking <- tracking %>% drop_na(ANGLE)
+
 
 tracking_foodjourney <- read_csv("/Users/narctaz/Desktop/personality/cue/results/master_results.csv") %>% 
   mutate(unique_trial_ID = as.factor(unique_trial_ID),
