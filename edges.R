@@ -1,10 +1,6 @@
 library(tidyverse)
 library(sf)
 
-#tracking <- read.csv("all_track.csv") 
-#tracking[c('ANGLE')][sapply(tracking[c('ANGLE')], is.infinite)] <- NA 
-#tracking <- tracking %>% drop_na(ANGLE)
-
 tracking_foodjourney <- read_csv("master_results.csv") %>% 
   mutate(unique_trial_ID = as.factor(unique_trial_ID),
          season = as.factor(season),
@@ -52,21 +48,6 @@ edge_pr <- lapply(trial_ls2, function(x){
     st_buffer(dist = 4)
   trial_door_buffer <- all_doors_buffer %>%
     filter(door_ID == trial_door_ID)
-  
-  #doors_x <- doors_coords %>%
-  #select(4:11, unique_trial_ID) %>%
-  #pivot_longer(cols = contains("x"), names_to = "door", values_to = "x") 
-  #mutate(door_ID = substr(door, 1, 1))
-  
-  #doors_y <- doors_coords %>%
-  #select(4:11, unique_trial_ID) %>%
-  # pivot_longer(cols = contains("y"), names_to = "door", values_to = "y") 
-  #mutate(door_ID = substr(door, 1, 1))
-  
-  #doors_coords <- doors_x %>%
-  #inner_join(doors_y, by = c("unique_trial_ID")) %>%
-  #select(unique_trial_ID, x, y)
-  
   
   # Define side length
   side_length <- 114
