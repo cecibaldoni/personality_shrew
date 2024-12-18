@@ -1,4 +1,15 @@
-.Rproj.user
+# Ignore a specific folder
+
+cue/
+
+# Ignore all CSV files
+
+*.csv
+
+# Other
+
 .Rhistory
+.Rproj.user/
 .RData
-.Ruserdata
+.DS_Store
+

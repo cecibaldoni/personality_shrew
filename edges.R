@@ -1,38 +1,34 @@
-library(dplyr)
+library(tidyverse)
 library(sf)
-# I am adding stuff in the git cloud 
-# Set working directory and read in the data
-setwd("/Users/narctaz/Desktop/personality/cue")
+
 #tracking <- read.csv("all_track.csv") 
 #tracking[c('ANGLE')][sapply(tracking[c('ANGLE')], is.infinite)] <- NA 
 #tracking <- tracking %>% drop_na(ANGLE)
 
-tracking_foodjourney <- read_csv("/Users/narctaz/Desktop/personality/cue/results/master_results.csv") %>% 
+tracking_foodjourney <- read_csv("master_results.csv") %>% 
   mutate(unique_trial_ID = as.factor(unique_trial_ID),
          season = as.factor(season),
-         
          ID = as.factor(ID),
          food_journey = as.factor(food_journey))
 trial_ls2 <- split(tracking_foodjourney, tracking_foodjourney$unique_trial_ID)
-doors <- read.csv("/Users/narctaz/Desktop/personality/cue/trial_door.csv", sep = ",", header = TRUE)  %>%
+doors <- read.csv("cue/trial_door.csv", sep = ",", header = TRUE)  %>%
   mutate(trial = paste0("T",trial_n))
-#mutate(Trial = paste0("T", trial))
 
-coords <- read_csv("coords.csv")
-#doors_coords <- read.csv("food_door_coordinates.csv") %>%
-  #mutate(Trial = paste0("T", TRIAL)) %>% 
-  #mutate(unique_trial_ID = paste(SEASON, ID, TRIAL, sep = "_"))
+coords <- read_csv("cue/coords.csv")
 
-edges <- "/Users/narctaz/Desktop/personality/cue/results/edges.csv"
+edges <- "edges.csv"
+
 edge_pr <- lapply(trial_ls2, function(x){
-  x <- trial_ls2[[1]]
+#  x <- trial_ls2[[196]]
   season_filter <- if (any(str_starts(x$unique_trial_ID, "winter_2024"))) {
     "winter_2024"
   } else {
     "other"
   }
   track_sf <- x %>%
-    st_as_sf(coords = c("x", "y"))
+    st_as_sf(coords = c("x", "y")) %>% 
+    mutate(x = st_coordinates(.)[, 1],
+           y = st_coordinates(.)[, 2])
   trial_door_ID <- doors %>%
     filter(trial == unique(x$trial)) %>%
     filter(season == season_filter) %>%
@@ -90,7 +86,7 @@ edge_pr <- lapply(trial_ls2, function(x){
     return(c(x, y))
   }
   
-  # Function to calculate perpendicular vector
+  # calculate perpendicular vector
   calculate_perpendicular_vector <- function(x1, y1, x2, y2) {
     if (any(is.na(c(x1, y1, x2, y2)))) {
       return(c(0, 0))
@@ -109,16 +105,16 @@ edge_pr <- lapply(trial_ls2, function(x){
   }
   
   # Ensure coords has the required rows
-  # if (nrow(coords) >= 4) {
-  #   # Intersection of diagonals A-C and B-D
-  #   intersection <- calculate_intersection(coords$x[1], coords$y[1], coords$x[3], coords$y[3], # A-C
-  #                                          coords$x[2], coords$y[2], coords$x[4], coords$y[4])  # B-D
-  #   
-  #   # Check if intersection is valid
-  #   if (any(is.na(intersection))) {
-  #     stop("Intersection of diagonals is invalid.")
-  #   }
-    
+  if (nrow(coords) >= 4) {
+    # Intersection of diagonals A-C and B-D
+    intersection <- calculate_intersection(coords$x[1], coords$y[1], coords$x[3], coords$y[3], # A-C
+                                           coords$x[2], coords$y[2], coords$x[4], coords$y[4])  # B-D
+
+    # Check if intersection is valid
+    if (any(is.na(intersection))) {
+      stop("Intersection of diagonals is invalid.")
+    }
+}
     # Find endpoints with perpendiculars and stop at intersections
   corner_points <- list()
   for (i in 1:nrow(coords)) {
@@ -175,20 +171,34 @@ edge_pr <- lapply(trial_ls2, function(x){
     buffer_distance <- 4 
     edges_buffer <- st_buffer(side_lines, dist = buffer_distance)
     
-    at_edge <- track_sf %>%
-      st_intersection(edges_buffer) %>%
-      as.data.frame() %>%
-      arrange(frame) #arrange by time/frame
+    # at_edge <- track_sf %>%
+    #   st_intersection(edges_buffer) %>%
+    #   as.data.frame() %>%
+    #   arrange(frame) #arrange by time/frame
+    track_sf <- track_sf %>%
+      mutate(at_edge = as.vector(st_intersects(geometry, edges_buffer, sparse = FALSE)))
     
-    x <- x %>%
-      mutate(at_edge = as.vector(st_intersects(track_sf, edges_buffer, sparse = FALSE)))
+    time_at_edge <- track_sf %>%
+      filter(at_edge == TRUE) %>% {
+        if (nrow(.) == 0) {
+          tibble(total_time = 0)
+        } else {
+          summarize(., total_time = sum(time)) }
+      } %>%
+      st_drop_geometry()
     
-    time_at_edge <- x %>%
-      filter(at_edge == TRUE) %>%
-      summarize(total_time = sum(time))
+    time_out_edge <- track_sf %>%
+      filter(!at_edge) %>% {
+        if (nrow(.) == 0) {
+          tibble(total_time = 0)
+        } else {
+          summarize(., total_time = sum(time)) }
+      } %>%
+      st_drop_geometry()
     
     calculate_distance <- function(data) {
       data <- data %>%
+        st_drop_geometry() %>%
         arrange(frame) %>%
         mutate(
           x_lag = lag(x),
@@ -199,40 +209,19 @@ edge_pr <- lapply(trial_ls2, function(x){
       return(total_distance)
     }
     
-    at_edge_cm <- calculate_distance(x %>% filter(at_edge == TRUE))
-    out_edge_cm <- calculate_distance(x %>% filter(at_edge == FALSE))
+    at_edge_cm <- calculate_distance(track_sf %>% filter(at_edge == TRUE))
+    out_edge_cm <- calculate_distance(track_sf %>% filter(at_edge == FALSE))
+    edge_tripto_cm <- calculate_distance(track_sf %>% filter(food_journey == "trip_to" & at_edge == TRUE))
+    edge_tripback_cm <- calculate_distance(track_sf %>% filter(food_journey == "trip_back" & at_edge == TRUE))
     
-    df = data.frame(x[1,1],x[1,2],x[1,3], x[1,4],
-                    time_at_edge, at_edge_cm, out_edge_cm) %>% 
-      droplevels()
-    colnames(df) <- c(
-      "season", "ID", "trial", "status",
-      "time_at_edge", "at_edge_cm", "out_edge_cm"
-    )
-    write.table(df, file = edges, append = TRUE, sep = ",", row.names = FALSE, col.names = !file.exists(edges))
-    # write.csv(df, file = paste0("/User/narctaz/Desktop/personality/cue/data/distance/", unique(x$unique_trial_ID),".csv")) 
-    # # Plot the arena with side buffer
-    # plot(st_geometry(buffer), col = 'lightblue', border = NA, main = "Arena with Side Buffer")
-    # plot(st_geometry(side_lines), col = 'transparent', border = 'black', add = TRUE)
-    # points(corner_points_df[,1], corner_points_df[,2], pch=16, col="red", cex=1.5)
-    # points(coords$x, coords$y, pch=16, col="blue", cex=1.5)
-    # text(coords$x, coords$y, labels=coords$door_ID, pos=3, col="blue", cex=1.2)
-    #legend("topright", legend=c("Center Points", "Corner Points", "Buffer"), col=c("blue", "red", "lightblue"), pch=16, bg="white")
-    
-    ## plot with buffer and shrew
-    # ggplot() +
-    #   geom_sf(data = track_sf, aes(geometry = geometry, color = "Track")) +
-    #   geom_sf(data = edges_buffer, aes(geometry = geometry, fill = "Edges Buffer"), alpha = 0.3) +
-    #   geom_sf(data = at_edge, aes(geometry = geometry, color = "At Edge")) +
-    #   scale_color_manual(values = c("Track" = "blue", "At Edge" = "red")) +
-    #   scale_fill_manual(values = c("Edges Buffer" = "gray"))
-    # Add legend to the plot
-    
-    edge_to_cm <- calculate_distance(x %>% filter(food_journey == "trip_to" & at_edge == TRUE))
-    edge_back_cm <- calculate_distance(x %>% filter(food_journey == "trip_back" & at_edge == TRUE))
-    
-    out_edge_to_cm <- calculate_distance(x %>% filter(food_journey == "trip_to" & out_edge == TRUE))
-    out_edge_back_cm <- calculate_distance(x %>% filter(food_journey == "trip_back" & out_edge == TRUE))
+    out_edge_tripto_cm <- calculate_distance(track_sf %>% filter(food_journey == "trip_to" & at_edge == FALSE))
+    out_edge_tripback_cm <- calculate_distance(track_sf %>% filter(food_journey == "trip_back" & at_edge == FALSE))
     #if at_edge2$food_journey == "exploration" then... create edge_exploration. else return
+    df = data.frame(x[1,1],x[1,2],x[1,3], x[1,4],
+                    time_at_edge, at_edge_cm, out_edge_cm, edge_tripto_cm, edge_tripback_cm) %>% 
+      droplevels()
+    
+    write.table(df, file = edges, append = TRUE, sep = ",", row.names = FALSE, col.names = !file.exists(edges))
+    
   }
 )
