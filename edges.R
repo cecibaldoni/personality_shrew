@@ -9,14 +9,14 @@ cue_foodjourney <- read_csv(here("cue/master_results.csv")) %>%
          ID = as.factor(ID),
          food_journey = as.factor(food_journey))
 cue_ls <- split(cue_foodjourney, cue_foodjourney$unique_trial_ID)
-doors <- read.csv(here("cue/trial_door.csv", sep = ",", header = TRUE))  %>%
+doors <- read.csv(here("cue/trial_door.csv"))  %>%
   mutate(trial = paste0("T",trial_n))
 
 coords <- read_csv(here("cue/coords.csv"))
 edges <- here("edges.csv")
 
 edge_pr <- lapply(cue_ls, function(x){
-#  x <- cue_ls[[196]]
+  x <- cue_ls[[196]]
   season_filter <- if (any(str_starts(x$unique_trial_ID, "winter_2024"))) {
     "winter_2024"
   } else {
@@ -196,6 +196,7 @@ edge_pr <- lapply(cue_ls, function(x){
     
     out_edge_tripto_cm <- calculate_distance(track_sf %>% filter(food_journey == "trip_to" & at_edge == FALSE))
     out_edge_tripback_cm <- calculate_distance(track_sf %>% filter(food_journey == "trip_back" & at_edge == FALSE))
+    #TODO
     #if at_edge2$food_journey == "exploration" then... create edge_exploration. else return
     df = data.frame(x[1,1],x[1,2],x[1,3], x[1,4],
                     time_at_edge, at_edge_cm, out_edge_cm, edge_tripto_cm, edge_tripback_cm) %>% 
@@ -217,6 +218,20 @@ foraging_tracking <- read_csv(here("foraging/all_trials.csv")) %>%
 
 # cm per pixel in foraging = 0.187192
 cm_per_pixel = 0.187192
+
+foraging_coords <- read_csv(here("foraging/islands.csv")) %>%
+  separate(A, into = c("A_x", "A_y"), sep = ";", convert = TRUE) %>% 
+  separate(B, into = c("B_x", "B_y"), sep = ";", convert = TRUE) %>% 
+  separate(C, into = c("C_x", "C_y"), sep = ";", convert = TRUE) %>% 
+  separate(D, into = c("D_x", "D_y"), sep = ";", convert = TRUE) %>% 
+  separate(door, into = c("door_x", "door_y"), sep = ";", convert = TRUE) %>% 
+  mutate(unique_trial_ID = as.factor(paste(season, ID, trial, sep = "_")),
+         ID = as.factor(ID),
+         season = as.factor(season),
+         trial = as.factor(trial),
+         across(contains("_x"), ~ . * cm_per_pixel),
+         across(contains("_y"), ~ . * cm_per_pixel))
+
 foraging_corners <- read_csv(here("foraging/foraging_corners.csv")) %>% 
   mutate(ID = as.factor(ID),
          season = as.factor(season),
@@ -228,8 +243,10 @@ foraging_corners <- read_csv(here("foraging/foraging_corners.csv")) %>%
 
 foraging_ls <- split(foraging_tracking, foraging_tracking$unique_trial_ID)
 
-##TO DO
-#1. check mismatch in unique_trial_ID.length between foraging_tracking and foraging_corners
+#check mismatch in unique_trial_ID.length between foraging_coords (and therefore foraging_tracking) and foraging_corners
+setdiff(unique(foraging_corners$unique_trial_ID), unique(foraging_coords$unique_trial_ID))
+
+
 # DO NOT RUN THE MAIN FUNCTION, it's incomplete, and mostly copied from coords
 
 foraging_edges <- lapply(foraging_ls, function(x){
@@ -239,29 +256,20 @@ foraging_edges <- lapply(foraging_ls, function(x){
     st_as_sf(coords = c("x", "y")) %>% 
     mutate(x = st_coordinates(.)[, 1],
            y = st_coordinates(.)[, 2])
-  trial_door_ID <- doors %>%
-    filter(trial == unique(x$trial)) %>%
-    filter(season == season_filter) %>%
-    pull(door)
-  
-  doors_x <- coords %>%
+  doors_x <- foraging_coords %>%
     filter(unique_trial_ID == unique(x$unique_trial_ID)) %>%
-    select(4:11) %>%
-    pivot_longer(cols = contains("x"), names_to = "door", values_to = "x") %>%
-    select(x)
-  coords <- coords %>%
+    select("door_x")
+    
+  coords <- foraging_coords %>%
     filter(unique_trial_ID == unique(x$unique_trial_ID)) %>%
-    select(4:11) %>%
-    pivot_longer(cols = contains("y"), names_to = "door", values_to = "y") %>%
-    mutate(door_ID = substr(door,1,1)) %>%
-    select(c("door_ID", "y")) %>%
+    select("door_y") %>% 
     bind_cols(doors_x)
   
-  all_doors_buffer <- coords %>%
-    st_as_sf(coords = c("x","y")) %>%
+  door_buffer <- coords %>%
+    st_as_sf(coords = c("door_x","door_y")) %>%
     st_buffer(dist = 4)
-  trial_door_buffer <- all_doors_buffer %>%
-    filter(door_ID == trial_door_ID)
+  
+  ## CODE FIXED up to here.
   
   # Define side length
   side_length <- 114
@@ -279,51 +287,51 @@ foraging_edges <- lapply(foraging_ls, function(x){
   
   
   # Ensure coords has the required rows
-  if (nrow(coords) >= 4) {
-    # Intersection of diagonals A-C and B-D
-    intersection <- calculate_intersection(coords$x[1], coords$y[1], coords$x[3], coords$y[3], # A-C
-                                           coords$x[2], coords$y[2], coords$x[4], coords$y[4])  # B-D
-    
-    # Check if intersection is valid
-    if (any(is.na(intersection))) {
-      stop("Intersection of diagonals is invalid.")
-    }
-  }
+  # if (nrow(coords) >= 4) {
+  #   # Intersection of diagonals A-C and B-D
+  #   intersection <- calculate_intersection(coords$x[1], coords$y[1], coords$x[3], coords$y[3], # A-C
+  #                                          coords$x[2], coords$y[2], coords$x[4], coords$y[4])  # B-D
+  #   
+  #   # Check if intersection is valid
+  #   if (any(is.na(intersection))) {
+  #     stop("Intersection of diagonals is invalid.")
+  #   }
+  # }
   # Find endpoints with perpendiculars and stop at intersections
-  corner_points <- list()
-  for (i in 1:nrow(coords)) {
-    next_i <- ifelse(i == nrow(coords), 1, i + 1)
-    
-    center_x <- coords$x[i]
-    center_y <- coords$y[i]
-    next_center_x <- coords$x[next_i]
-    next_center_y <- coords$y[next_i]
-    
-    # Perpendicular vector for current door
-    perp_vector <- calculate_perpendicular_vector(center_x, center_y, intersection[1], intersection[2])
-    
-    # Potential endpoints for the current side
-    shift <- side_length / 2
-    x1 <- center_x - shift * perp_vector[1]
-    y1 <- center_y - shift * perp_vector[2]
-    x2 <- center_x + shift * perp_vector[1]
-    y2 <- center_y + shift * perp_vector[2]
-    
-    # Intersection with the next side perpendicular line
-    next_perp_vector <- calculate_perpendicular_vector(next_center_x, next_center_y, intersection[1], intersection[2])
-    x3 <- next_center_x - shift * next_perp_vector[1]
-    y3 <- next_center_y - shift * next_perp_vector[2]
-    x4 <- next_center_x + shift * next_perp_vector[1]
-    y4 <- next_center_y + shift * next_perp_vector[2]
-    
-    intersection_point <- calculate_intersection(x1, y1, x2, y2, x3, y3, x4, y4)
-    
-    if (!any(is.na(intersection_point))) {
-      corner_points[[i]] <- intersection_point
-    } else {
-      corner_points[[i]] <- c(x2, y2) # Second endpoint as fallback
-    }
-  }
+  # corner_points <- list()
+  # for (i in 1:nrow(coords)) {
+  #   next_i <- ifelse(i == nrow(coords), 1, i + 1)
+  #   
+  #   center_x <- coords$x[i]
+  #   center_y <- coords$y[i]
+  #   next_center_x <- coords$x[next_i]
+  #   next_center_y <- coords$y[next_i]
+  #   
+  #   # Perpendicular vector for current door
+  #   perp_vector <- calculate_perpendicular_vector(center_x, center_y, intersection[1], intersection[2])
+  #   
+  #   # Potential endpoints for the current side
+  #   shift <- side_length / 2
+  #   x1 <- center_x - shift * perp_vector[1]
+  #   y1 <- center_y - shift * perp_vector[2]
+  #   x2 <- center_x + shift * perp_vector[1]
+  #   y2 <- center_y + shift * perp_vector[2]
+  #   
+  #   # Intersection with the next side perpendicular line
+  #   next_perp_vector <- calculate_perpendicular_vector(next_center_x, next_center_y, intersection[1], intersection[2])
+  #   x3 <- next_center_x - shift * next_perp_vector[1]
+  #   y3 <- next_center_y - shift * next_perp_vector[2]
+  #   x4 <- next_center_x + shift * next_perp_vector[1]
+  #   y4 <- next_center_y + shift * next_perp_vector[2]
+  #   
+  #   intersection_point <- calculate_intersection(x1, y1, x2, y2, x3, y3, x4, y4)
+  #   
+  #   if (!any(is.na(intersection_point))) {
+  #     corner_points[[i]] <- intersection_point
+  #   } else {
+  #     corner_points[[i]] <- c(x2, y2) # Second endpoint as fallback
+  #   }
+  # }
   
   # Convert corner points to data frame
   corner_points_df <- do.call(rbind, corner_points)
