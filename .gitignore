@@ -1,6 +1,7 @@
 # Ignore a specific folder
 
 cue/
+foraging/
 
 # Ignore all CSV files
 
