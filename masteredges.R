@@ -6,7 +6,7 @@ library(tidyr)
 #----------------------------
 # 1. Load Data
 #----------------------------
-tracking_foodjourney <- read_csv("/Users/narctaz/Desktop/personality/cue/results/master_results.csv") %>% 
+tracking_foodjourney <- read_csv("/Users/narctaz/Desktop/personality/dataverse_files/cue/processed/master_results.csv") %>% 
   mutate(
     unique_trial_ID = as.factor(unique_trial_ID),
     season = as.factor(season),
@@ -28,7 +28,7 @@ doors <- read.csv("/Users/narctaz/Desktop/personality/cue/trial_door.csv") %>%
 
 coords <- read_csv("/Users/narctaz/Desktop/personality/cue/coords.csv")
 
-edges_file <- "/Users/narctaz/Desktop/personality/cue/results/masteredges.csv"
+edges_file <- "/Users/narctaz/Desktop/personality/dataverse_files/cue/processed/masteredges.csv"
 
 #----------------------------
 # 2. Utility Functions
@@ -115,11 +115,19 @@ process_trial <- function(trial_data) {
     summarize(total_time = sum(time)) %>%
     pull(total_time)
   
+  #time_out_edge_after_food <- trial_data %>%
+    #filter(out_edge, food_journey == "trip_back") %>%
+    #summarize(total_time = sum(time, na.rm = TRUE)) %>%
+   # pull(total_time)
+  
+#  if (length(time_out_edge_after_food) == 0) time_out_edge_after_food <- 0
+  
   df <- data.frame(
     season = trial_data$season[1],
     ID = trial_data$ID[1],
     trial = trial_data$trial[1],
     time_at_edge = time_at_edge,
+    time_out_edge_after_food = time_out_edge_after_food,
     at_edge_cm = calculate_distance(trial_data %>% filter(at_edge)),
     out_edge_cm = calculate_distance(trial_data %>% filter(out_edge)),
     edge_to_cm = calculate_distance(trial_data %>% filter(food_journey == "trip_to" & at_edge)),
@@ -147,7 +155,10 @@ trial_results <- trial_results %>%
   # Join in total trial time
   left_join(trial_total_time, by = "unique_trial_ID") %>%
   # Calculate percent time at edge
-  mutate(percent_time_at_edge = (time_at_edge / total_trial_time) * 100) %>%
+  mutate(
+    percent_time_at_edge = (time_at_edge / total_trial_time) * 100,
+    #percent_time_out_edge_after_food = (time_out_edge_after_food / total_trial_time) * 100
+    ) %>%
   select(unique_trial_ID, everything())#reorder columns
 
 write.table(trial_results, file = edges_file, append = TRUE, sep = ",",

@@ -216,7 +216,7 @@ cue_edge_pr <- lapply(cue_ls, function(x){
 
 # Foraging - Edges calculation ####
 
-foraging_tracking <- read_csv(here("foraging/all_trials.csv")) %>% 
+foraging_tracking <- read_csv(here("/Users/narctaz/Desktop/personality/dataverse_files/foraging/raw/all_trials.csv")) %>% 
   mutate(ID = as.factor(ID),
          season = as.factor(season),
          trial = as.factor(trial),
@@ -226,7 +226,7 @@ foraging_tracking <- read_csv(here("foraging/all_trials.csv")) %>%
 # cm per pixel in foraging = 0.187192
 fr_cm_per_pixel = 0.187192
 
-fr_coords <- read_csv(here("foraging/islands.csv")) %>%
+fr_coords <- read_csv(here("/Users/narctaz/Desktop/personality/dataverse_files/foraging/assets/islands.csv")) %>%
   separate(A, into = c("A_x", "A_y"), sep = ";", convert = TRUE) %>% 
   separate(B, into = c("B_x", "B_y"), sep = ";", convert = TRUE) %>% 
   separate(C, into = c("C_x", "C_y"), sep = ";", convert = TRUE) %>% 
@@ -261,7 +261,7 @@ fr_corners <- fr_corners %>%
 foraging_ls <- split(foraging_tracking, foraging_tracking$unique_trial_ID)
 
 
-foraging_edges <- here("foraging/foraging_edges.csv")
+foraging_edges <- here("/Users/narctaz/Desktop/personality/dataverse_files/foraging/assets/foraging_edges.csv")
 
 fr_edges_pr <- lapply(foraging_ls, function(x){
   #x <- foraging_ls[[1]]
