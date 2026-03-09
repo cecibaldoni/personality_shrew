@@ -6,7 +6,7 @@ library(ggplot2)    # plotting
 library(stringr)
 # ------------------------------------------------------------------
 
-# path to the “new” dataset you described
+
 input_file  <- "/Users/narctaz/Desktop/personality/dataverse_files/foraging/assets/foraging_edges.csv"
 output_file <- "/Users/narctaz/Desktop/personality/dataverse_files/foraging/assets/fmasteredges.csv"   # optional write‑out
 
@@ -46,6 +46,11 @@ df <- df %>%
     total_trial_time = time_total,
     time_at_edge     = time_edge
   )
+
+# add mean_speed column for foraging data
+fr_cm_per_pixel <- 0.187192
+df <- df %>%
+  mutate(mean_speed = ((path_length_edge + path_length_center) * fr_cm_per_pixel) / (total_trial_time / 1000))
 # ------------------------------------------------------------------
 
 # per‑trial comparison with a reference trial (e.g. T1) –
@@ -111,6 +116,10 @@ write_csv(df, output_file)
 # read masteredges.csv
 masteredges_path <- "/Users/narctaz/Desktop/personality/cue/results/masteredges.csv"
 masteredges <- read_csv(masteredges_path)
+
+# add mean_speed column for cue data
+masteredges <- masteredges %>%
+  mutate(mean_speed = (at_edge_cm + out_edge_cm) / (total_trial_time / 1000))
 
 # add task column with "cue"
 masteredges <- masteredges %>% mutate(task = "cue")
@@ -184,6 +193,5 @@ p7 <- ggplot(multi_data, aes(x = trial, y = percent_time_at_edge, color = season
 print(p7)
 
 # Save these plots
-ggsave("total_time_boxplot.png", plot = p5, width = 8, height = 6)
 ggsave("first_trials_bar.png", plot = p6, width = 8, height = 6)
 ggsave("multi_data_scatter.png", plot = p7, width = 10, height = 6)
