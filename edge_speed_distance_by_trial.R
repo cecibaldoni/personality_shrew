@@ -14,10 +14,10 @@ foraging_edges_path <- file.path(root_dir, "dataverse_files", "foraging", "asset
 
 output_path <- file.path(root_dir, "personality", "edge_speed_distance_by_trial.csv")
 
-# Foraging conversion from pixels to cm used in existing scripts
+# Foraging conversion from pixels to cm
 foraging_cm_per_pixel <- 0.187192
 
-# Utility: sum step distances in coordinate units (e.g., cm)
+# Utility: sum step distances in coordinate units
 calculate_distance <- function(df) {
   if (nrow(df) < 2) return(0)
   df <- df %>%
@@ -149,3 +149,25 @@ write_csv(combined_metrics, output_path)
 
 cat("Saved per-trial edge speed and distance metrics:\n", output_path, "\n", sep = "")
 cat("Rows written:", nrow(combined_metrics), "\n")
+
+# Merge into combined_edges.csv
+combined_edges_path <- file.path(root_dir, "personality", "combined_edges.csv")
+combined_edges <- read_csv(combined_edges_path, show_col_types = FALSE)
+
+# Remove old edge speed/distance columns if already present (avoid duplicates on re-run)
+combined_edges <- combined_edges %>%
+  select(-any_of(c("mean_speed_at_edge_cm_s", "mean_speed_out_edge_cm_s",
+                    "total_distance_at_edge_cm", "total_distance_out_edge_cm")))
+
+combined_edges_updated <- combined_edges %>%
+  left_join(
+    combined_metrics %>% select(unique_trial_ID, mean_speed_at_edge_cm_s,
+                                mean_speed_out_edge_cm_s, total_distance_at_edge_cm,
+                                total_distance_out_edge_cm),
+    by = "unique_trial_ID"
+  )
+
+write_csv(combined_edges_updated, combined_edges_path)
+
+cat("Updated combined_edges.csv with edge speed/distance columns:\n", combined_edges_path, "\n", sep = "")
+cat("Missing joins:", sum(is.na(combined_edges_updated$mean_speed_at_edge_cm_s)), "\n")
