@@ -331,10 +331,13 @@ edges <- read_csv(paths$combined_edges, show_col_types = FALSE) %>%
 latency <- read_csv(paths$latency, show_col_types = FALSE) %>%
   rename(unique_trial_ID = unique_trial_id, ID = id) %>%
   mutate(
+    task = if ("task" %in% names(.)) task else test
+  ) %>%
+  mutate(
     unique_trial_ID = clean_key(unique_trial_ID),
     ID = as.character(ID),
     season = str_to_lower(str_trim(season)),
-    test = str_to_lower(str_trim(test)),
+    task = str_to_lower(str_trim(task)),
     trial_num = parse_trial_num(trial)
   )
 
@@ -346,8 +349,7 @@ maze <- read_csv(paths$maze, show_col_types = FALSE) %>%
     trial_num = parse_trial_num(trial)
   )
 
-latency_task <- latency %>%
-  mutate(task = test)
+latency_task <- latency
 
 # Build one unified trial table so cue/foraging, od, and maze are all represented as tasks.
 edge_base <- edges %>%
@@ -355,6 +357,7 @@ edge_base <- edges %>%
     unique_trial_ID, ID, season, trial, trial_num, task,
     time_at_edge, percent_time_at_edge, total_distance_out_edge_cm,
     mean_speed, mean_speed_at_edge_cm_s, mean_speed_out_edge_cm_s,
+    total_trial_time = as.numeric(total_trial_time),
     emergence = NA_real_,
     total_deviations = NA_real_,
     total_deviation_length = NA_real_
@@ -370,6 +373,7 @@ latency_base <- latency_task %>%
     mean_speed = NA_real_,
     mean_speed_at_edge_cm_s = NA_real_,
     mean_speed_out_edge_cm_s = NA_real_,
+    total_trial_time = as.numeric(emergence),
     emergence = as.numeric(emergence),
     total_deviations = NA_real_,
     total_deviation_length = NA_real_
@@ -385,6 +389,7 @@ maze_base <- maze %>%
     mean_speed = NA_real_,
     mean_speed_at_edge_cm_s = NA_real_,
     mean_speed_out_edge_cm_s = NA_real_,
+    total_trial_time = NA_real_,
     emergence = NA_real_,
     total_deviations = as.numeric(total_deviations),
     total_deviation_length = as.numeric(total_deviation_length)
@@ -399,6 +404,7 @@ trial_scores <- all_trials %>%
     z_percent_edge_low = -zscore(percent_time_at_edge),
     z_out_dist_high = zscore(total_distance_out_edge_cm),
     z_mean_speed_total = zscore(mean_speed),
+    z_total_trial_time = zscore(total_trial_time),
     edge_speed_bias = ifelse(
       (mean_speed_out_edge_cm_s + mean_speed_at_edge_cm_s) > 0,
       (mean_speed_out_edge_cm_s - mean_speed_at_edge_cm_s) /
@@ -416,7 +422,7 @@ trial_scores <- all_trials %>%
             z_dev_num_high, z_dev_cm_high, z_latency_low),
       na.rm = TRUE
     ),
-    activity_cluster = z_mean_speed_total,
+    activity_cluster = rowMeans(cbind(z_mean_speed_total, z_total_trial_time), na.rm = TRUE),
     boldness_edge_speed_trait = z_edge_speed_bias,
 
     exploration_base = rowMeans(
