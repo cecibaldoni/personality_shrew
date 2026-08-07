@@ -6,6 +6,7 @@ foraging/
 # Ignore all CSV files
 
 *.csv
+*.zip
 
 # Other
 
