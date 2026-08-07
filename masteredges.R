@@ -2,11 +2,19 @@ library(dplyr)
 library(sf)
 library(readr)
 library(tidyr)
+library(here)
 
 #----------------------------
 # 1. Load Data
 #----------------------------
-tracking_foodjourney <- read_csv("/Users/narctaz/Desktop/personality/dataverse_files/cue/processed/master_results.csv") %>% 
+#tracking_foodjourney <- read_csv("/Users/narctaz/Desktop/personality/dataverse_files/cue/processed/master_results.csv") %>% 
+
+# TODO install.packages("here")
+# TODO fix your files locally (logically, please)
+# TODO change all absolute path across this file and all the other scripts with the structure below (read.csv(here("folder", "subfolder", "file.csv")))
+# TODO write how the files and folders are organised in the readme file, so I can put the files in the same folders
+
+tracking_foodjourney <- read_csv(here("dataverse_files", "cue", "processed", "master_results.csv")) %>%
   mutate(
     unique_trial_ID = as.factor(unique_trial_ID),
     season = as.factor(season),
