@@ -2,7 +2,7 @@
 Scripts for personality investigation in the common shrew (S.araneus)
 
 Path
-
+```
 personality_shrew/
 ├─ analysis.R
 └─ data/
@@ -16,3 +16,4 @@ personality_shrew/
    │  └─ foraging_edges.csv
    └─ maze/
       └─ maze_results.csv
+```
