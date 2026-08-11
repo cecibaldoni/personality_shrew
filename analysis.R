@@ -9,6 +9,7 @@ suppressPackageStartupMessages({
   library(lme4)
   library(performance)
   library(tibble)
+  library(here)
 })
 
 if (!exists("%>%")) {
@@ -28,42 +29,39 @@ if (!exists("%>%")) {
 # -----------------------------------------------------------------------------
 # CONFIG
 # -----------------------------------------------------------------------------
-root_dir <- "/Users/narctaz/Desktop/personality"
-out_dir <- file.path(root_dir, "personality")
-
 paths <- list(
-  cue_tracking = file.path(root_dir, "dataverse_files", "cue", "processed", "master_results.csv"),
-  cue_doors = file.path(root_dir, "cue", "trial_door.csv"),
-  cue_coords = file.path(root_dir, "cue", "coords.csv"),
-  foraging_edges = file.path(root_dir, "dataverse_files", "foraging", "assets", "foraging_edges.csv"),
-  combined_edges = file.path(out_dir, "combined_edges.csv"),
-  latency = file.path(root_dir, "latency.csv"),
-  maze = file.path(root_dir, "dataverse_files", "maze", "processed", "maze_results.csv")
+  cue_tracking = here("data", "raw", "dataverse_files", "cue", "processed", "master_results.csv"),
+  cue_doors = here("data", "raw", "cue", "trial_door.csv"),
+  cue_coords = here("data", "raw", "cue", "coords.csv"),
+  foraging_edges = here("data", "raw", "dataverse_files", "foraging", "assets", "foraging_edges.csv"),
+  combined_edges = here("data", "processed", "combined_edges.csv"),
+  latency = here("data", "raw", "latency.csv"),
+  maze = here("data", "raw", "dataverse_files", "maze", "processed", "maze_results.csv")
 )
 
 outputs <- list(
-  edge_speed_distance = file.path(out_dir, "edge_speed_distance_by_trial.csv"),
-  cluster_scores = file.path(out_dir, "behaviour_cluster_scores_by_trial.csv"),
-  t1_vs_later = file.path(out_dir, "behaviour_change_t1_vs_later.csv"),
-  seasonal_change = file.path(out_dir, "behaviour_change_by_season.csv"),
-  pca_edge_scores = file.path(out_dir, "pca_edge_scores_by_trial.csv"),
-  pca_edge_loadings = file.path(out_dir, "pca_edge_loadings.csv"),
-  pca_maze_scores = file.path(out_dir, "pca_maze_scores_by_trial.csv"),
-  pca_maze_loadings = file.path(out_dir, "pca_maze_loadings.csv"),
-  pca_individual_scores = file.path(out_dir, "pca_individual_season_scores.csv"),
-  pca_individual_loadings = file.path(out_dir, "pca_individual_season_loadings.csv"),
-  glmm_raw_summary = file.path(out_dir, "glmm_raw_hypothesis_table.csv"),
-  glmm_raw_coefficients = file.path(out_dir, "glmm_raw_best_model_coefficients.csv"),
-  glmm_cluster_summary = file.path(out_dir, "cluster_glmm_hypothesis_table.csv"),
-  glmm_cluster_coefficients = file.path(out_dir, "cluster_glmm_best_model_coefficients.csv"),
-  repeated_profile_consistency = file.path(out_dir, "repeated_profile_consistency.csv"),
-  master_hypothesis_table = file.path(out_dir, "hypothesis_decision_table.csv"),
-  plot_trait_by_task = file.path(out_dir, "plots", "personality_master", "cluster_traits_by_task.png"),
-  plot_trait_by_season = file.path(out_dir, "plots", "personality_master", "cluster_traits_by_season.png"),
-  plot_repeated_heatmap = file.path(out_dir, "plots", "personality_master", "repeated_id_profile_heatmap.png")
+  edge_speed_distance = here("data", "processed", "edge_speed_distance_by_trial.csv"),
+  cluster_scores = here("data", "processed", "behaviour_cluster_scores_by_trial.csv"),
+  t1_vs_later = here("data", "processed", "behaviour_change_t1_vs_later.csv"),
+  seasonal_change = here("data", "processed", "behaviour_change_by_season.csv"),
+  pca_edge_scores = here("data", "processed", "pca_edge_scores_by_trial.csv"),
+  pca_edge_loadings = here("data", "processed", "pca_edge_loadings.csv"),
+  pca_maze_scores = here("data", "processed", "pca_maze_scores_by_trial.csv"),
+  pca_maze_loadings = here("data", "processed", "pca_maze_loadings.csv"),
+  pca_individual_scores = here("data", "processed", "pca_individual_season_scores.csv"),
+  pca_individual_loadings = here("data", "processed", "pca_individual_season_loadings.csv"),
+  glmm_raw_summary = here("data", "processed", "glmm_raw_hypothesis_table.csv"),
+  glmm_raw_coefficients = here("data", "processed", "glmm_raw_best_model_coefficients.csv"),
+  glmm_cluster_summary = here("data", "processed", "cluster_glmm_hypothesis_table.csv"),
+  glmm_cluster_coefficients = here("data", "processed", "cluster_glmm_best_model_coefficients.csv"),
+  repeated_profile_consistency = here("data", "processed", "repeated_profile_consistency.csv"),
+  master_hypothesis_table = here("data", "processed", "hypothesis_decision_table.csv"),
+  plot_trait_by_task = here("output", "figures", "personality_master", "cluster_traits_by_task.png"),
+  plot_trait_by_season = here("output", "figures", "personality_master", "cluster_traits_by_season.png"),
+  plot_repeated_heatmap = here("output", "figures", "personality_master", "repeated_id_profile_heatmap.png")
 )
 
-dir.create(file.path(out_dir, "plots", "personality_master"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here("output", "figures", "personality_master"), recursive = TRUE, showWarnings = FALSE)
 
 foraging_cm_per_pixel <- 0.187192
 season_order <- c("spring", "summer", "winter")
