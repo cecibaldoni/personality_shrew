@@ -30,13 +30,13 @@ if (!exists("%>%")) {
 # CONFIG
 # -----------------------------------------------------------------------------
 paths <- list(
-  cue_tracking = here("data", "raw", "dataverse_files", "cue", "processed", "master_results.csv"),
-  cue_doors = here("data", "raw", "cue", "trial_door.csv"),
-  cue_coords = here("data", "raw", "cue", "coords.csv"),
-  foraging_edges = here("data", "raw", "dataverse_files", "foraging", "assets", "foraging_edges.csv"),
-  combined_edges = here("data", "processed", "combined_edges.csv"),
-  latency = here("data", "raw", "latency.csv"),
-  maze = here("data", "raw", "dataverse_files", "maze", "processed", "maze_results.csv")
+  cue_tracking = here("data", "cue", "master_results.csv"),
+  cue_doors = here("data", "cue", "trial_door.csv"),
+  cue_coords = here("data", "cue", "coords.csv"),
+  foraging_edges = here("data", "foraging", "foraging_edges.csv"),
+  combined_edges = here("data", "combined_edges.csv"),
+  latency = here("data", "latency.csv"),
+  maze = here("data", "maze", "maze_results.csv")
 )
 
 outputs <- list(
