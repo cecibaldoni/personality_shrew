@@ -1,5 +1,6 @@
 # Ignore a specific folder
 
+data/
 cue/
 foraging/
 
