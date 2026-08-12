@@ -3,6 +3,7 @@
 data/
 cue/
 foraging/
+output/
 
 # Ignore all CSV files
 

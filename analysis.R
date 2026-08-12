@@ -1,20 +1,32 @@
-suppressPackageStartupMessages({
+suppressPackageStartupMessages({ # Why?
   library(magrittr)
-  library(dplyr)
-  library(readr)
-  library(stringr)
-  library(tidyr)
-  library(ggplot2)
+#  library(dplyr) 
+#  library(readr)
+#  library(stringr)
+#  library(tidyr)
+#  library(ggplot2)
   library(sf)
   library(lme4)
   library(performance)
-  library(tibble)
+#  library(tibble)
   library(here)
+  # dplyr, readr, stringr, tidyr, ggplot2, tibble are all in tidyverse
 })
 
 if (!exists("%>%")) {
   `%>%` <- magrittr::`%>%`
 }
+
+
+# my take:
+packages <- c("magrittr", "tidyverse", "sf", "lme4", "performance", "tibble", "here")
+
+installed <- packages %in% rownames(installed.packages())
+if (any(!installed)) {
+  install.packages(packages[!installed])
+}
+
+lapply(packages, library, character.only = TRUE)
 
 # =============================================================================
 # Personality Master Analysis
@@ -59,16 +71,18 @@ outputs <- list(
   plot_trait_by_task = here("output", "figures", "personality_master", "cluster_traits_by_task.png"),
   plot_trait_by_season = here("output", "figures", "personality_master", "cluster_traits_by_season.png"),
   plot_repeated_heatmap = here("output", "figures", "personality_master", "repeated_id_profile_heatmap.png")
-)
+) #this is A LOT of outputs. if I pick one at random, do you know what's inside? :D:
 
-dir.create(here("output", "figures", "personality_master"), recursive = TRUE, showWarnings = FALSE)
+dir.create(here("output", "figures", "personality_master"), recursive = TRUE, showWarnings = FALSE) #do they need to be in the gitignore?
 
 foraging_cm_per_pixel <- 0.187192
-season_order <- c("spring", "summer", "winter")
+season_order <- c("spring", "summer", "winter") #why not summer, winter, spring? this looks like an alphabetic choice an llm would make
 
 # -----------------------------------------------------------------------------
 # HELPERS
 # -----------------------------------------------------------------------------
+
+# what does this do?
 zscore <- function(x) {
   s <- sd(x, na.rm = TRUE)
   if (is.na(s) || s == 0) return(rep(0, length(x)))
@@ -109,6 +123,7 @@ calculate_intersection <- function(x1, y1, x2, y2, x3, y3, x4, y4) {
   c(x, y)
 }
 
+#what does this do?
 safe_icc <- function(model) {
   vc <- as.data.frame(VarCorr(model))
   id_var <- vc$vcov[vc$grp == "ID"]
@@ -195,7 +210,7 @@ fit_glmm_family <- function(data, response_var) {
 # -----------------------------------------------------------------------------
 # 1) EDGE SPEED/DISTANCE + MERGE INTO COMBINED_EDGES
 # -----------------------------------------------------------------------------
-cat("[1/5] Computing edge speed/distance metrics...\n")
+cat("[1/5] Computing edge speed/distance metrics...\n") # why?
 
 cue_tracking <- read_csv(paths$cue_tracking, show_col_types = FALSE)
 cue_doors <- read_csv(paths$cue_doors, show_col_types = FALSE) %>% mutate(trial = paste0("T", trial_n))
@@ -294,6 +309,9 @@ edge_speed_distance <- bind_rows(cue_metrics, foraging_metrics) %>%
   arrange(task, ID, season, trial)
 
 write_csv(edge_speed_distance, outputs$edge_speed_distance)
+#ERROR. THE PATH IS NOT CORRECT: 
+# it's looking for: ~personality_shrew/data/processed/edge_speed_distance_by_trial.csv
+#but what we have is ~personality_shrew/data/cue or ~personality_shrew/data/foraging or ~personality_shrew/data/maze
 
 combined_edges <- read_csv(paths$combined_edges, show_col_types = FALSE) %>%
   select(-any_of(c(
@@ -309,13 +327,13 @@ combined_edges <- combined_edges %>%
     by = "unique_trial_ID"
   )
 
-write_csv(combined_edges, paths$combined_edges)
-cat("[1/5] Done.\n")
+write_csv(combined_edges, paths$combined_edges) #this writes without a path, is this wanted behavior?
+cat("[1/5] Done.\n") #repeat: why?
 
 # -----------------------------------------------------------------------------
 # 2) CLUSTER SCORES + CHANGE SUMMARIES
 # -----------------------------------------------------------------------------
-cat("[2/5] Building behavioral cluster scores...\n")
+cat("[2/5] Building behavioral cluster scores...\n") # ...
 
 edges <- read_csv(paths$combined_edges, show_col_types = FALSE) %>%
   mutate(
@@ -439,6 +457,8 @@ trial_scores <- all_trials %>%
   )
 
 write_csv(trial_scores, outputs$cluster_scores)
+#ERROR: it's looking for ~/personality_shrew/data/processed/behaviour_cluster_scores_by_trial.csv
+#but again, data has three folders within
 
 t1_vs_later <- trial_scores %>%
   mutate(is_t1 = trial_num == 1) %>%
@@ -462,6 +482,7 @@ t1_vs_later <- trial_scores %>%
   mutate(across(contains("_to_later"), ~ ifelse(is.nan(.x), NA_real_, .x)))
 
 write_csv(t1_vs_later, outputs$t1_vs_later)
+# ERROR PATH
 
 id_season <- trial_scores %>%
   group_by(ID, season) %>%
@@ -484,7 +505,9 @@ id_season <- trial_scores %>%
   ungroup()
 
 write_csv(id_season, outputs$seasonal_change)
-cat("[2/5] Done.\n")
+#ERROR PATH
+
+cat("[2/5] Done.\n") #remove all of these cats
 
 # -----------------------------------------------------------------------------
 # 3) PCA (EDGE, MAZE, INDIVIDUAL x SEASON)
@@ -508,6 +531,7 @@ edge_loadings <- as.data.frame(edge_pca$rotation) %>%
 
 write_csv(edge_scores, outputs$pca_edge_scores)
 write_csv(edge_loadings, outputs$pca_edge_loadings)
+#ERROR PATH
 
 maze_complete <- maze %>%
   select(unique_trial_ID, ID, season, trial, total_deviations, total_deviation_length) %>%
@@ -521,6 +545,7 @@ maze_loadings <- as.data.frame(maze_pca$rotation) %>%
 
 write_csv(maze_scores, outputs$pca_maze_scores)
 write_csv(maze_loadings, outputs$pca_maze_loadings)
+#guess? ERROR PATH
 
 edges_by_ind <- edges %>%
   group_by(ID, season) %>%
@@ -576,6 +601,7 @@ raw_coefs <- bind_rows(lapply(raw_results, function(x) x$coefs))
 
 write_csv(raw_summary, outputs$glmm_raw_summary)
 write_csv(raw_coefs, outputs$glmm_raw_coefficients)
+#guess? ERROR PATH
 
 cluster_responses <- c("boldness_cluster", "exploration_cluster", "activity_cluster", "boldness_edge_speed_trait")
 cluster_results <- lapply(cluster_responses, function(r) fit_glmm_family(trial_scores, r))
@@ -584,6 +610,7 @@ cluster_coefs <- bind_rows(lapply(cluster_results, function(x) x$coefs))
 
 write_csv(cluster_summary, outputs$glmm_cluster_summary)
 write_csv(cluster_coefs, outputs$glmm_cluster_coefficients)
+#guess? ERROR PATH
 
 master_hypothesis <- bind_rows(
   raw_summary %>% mutate(group = "raw"),
@@ -592,6 +619,8 @@ master_hypothesis <- bind_rows(
   select(group, everything())
 
 write_csv(master_hypothesis, outputs$master_hypothesis_table)
+#guess? ERROR PATH
+
 cat("[4/5] Done.\n")
 
 # -----------------------------------------------------------------------------
@@ -660,6 +689,8 @@ consistency_tbl <- within_tbl %>%
   arrange(mean_within_dist)
 
 write_csv(consistency_tbl, outputs$repeated_profile_consistency)
+# ERROR PATH
+
 cat("[5/6] Done.\n\n")
 
 # -----------------------------------------------------------------------------
@@ -688,7 +719,7 @@ p_task <- ggplot(trait_long, aes(x = task, y = score, fill = task)) +
     x = "Task",
     y = "Trait Score"
   ) +
-  theme_minimal(base_size = 12) +
+  theme_minimal(base_size = 12) +   #theme_bw
   theme(legend.position = "none")
 
 ggsave(outputs$plot_trait_by_task, p_task, width = 11, height = 7, dpi = 300)
@@ -705,6 +736,11 @@ p_season <- ggplot(trait_long, aes(x = season, y = score, fill = season)) +
   theme(legend.position = "none")
 
 ggsave(outputs$plot_trait_by_season, p_season, width = 11, height = 7, dpi = 300)
+
+#From these plots I have no idea what is summer winter or spring.
+
+# build a helper function to assign colours to season to build plot. you can find an example here: https://github.com/cecibaldoni/shrew-learning/blob/main/utils.R
+
 
 heat_df <- profile_tbl %>%
   filter(ID %in% rep_ids) %>%
