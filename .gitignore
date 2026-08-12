@@ -1,11 +1,13 @@
 # Ignore a specific folder
 
+data/
 cue/
 foraging/
 
 # Ignore all CSV files
 
 *.csv
+*.zip
 
 # Other
 

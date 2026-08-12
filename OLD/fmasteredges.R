@@ -6,11 +6,19 @@ library(ggplot2)    # plotting
 library(stringr)
 library(lme4)       # for mixed models
 library(tidyr)      # for pivot_wider
-# ------------------------------------------------------------------
+library(here)
 
 
-input_file  <- "/Users/narctaz/Desktop/personality/dataverse_files/foraging/assets/foraging_edges.csv"
-output_file <- "/Users/narctaz/Desktop/personality/dataverse_files/foraging/assets/fmasteredges.csv"   # optional write‑out
+# input_file  <- "/Users/narctaz/Desktop/personality/dataverse_files/foraging/assets/foraging_edges.csv"
+# output_file <- "/Users/narctaz/Desktop/personality/dataverse_files/foraging/assets/fmasteredges.csv"
+
+# TODO install.packages("here")
+# TODO fix your files locally (logically, please)
+# TODO change all absolute path across this file and all the other scripts with the structure below (read.csv(here("folder", "subfolder", "file.csv")))
+# TODO write how the files and folders are organised in the readme file, so I can put the files in the same folders (yes, if the folders are called dataverse_files, I must have dataverse_files too.)
+
+input_file <- read.csv(here("dataverse_files", "foraging", "assets", "foraging_edges.csv"))
+output_file <- read.csv(here("dataverse_files", "foraging", "assets", "fmasteredges.csv"))
 
 # ------------------------------------------------------------------
 # 1. read and inspect ------------------------------------------------

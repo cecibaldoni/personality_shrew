@@ -6,14 +6,20 @@ Path
 personality_shrew/
 ├─ analysis.R
 └─ data/
-   ├─ combined_edges.csv
-   ├─ latency.csv
-   ├─ cue/
-   │  ├─ trial_door.csv
-   │  ├─ coords.csv
-   │  └─ master_results.csv
-   ├─ foraging/
-   │  └─ foraging_edges.csv
-   └─ maze/
-      └─ maze_results.csv
+│   ├─ combined_edges.csv
+│   ├─ latency.csv
+│   ├─ cue/
+│   │  ├─ trial_door.csv
+│   │  ├─ coords.csv
+│   │  └─ master_results.csv
+│   ├─ foraging/
+│   │  └─ foraging_edges.csv
+│   └─ maze/
+│      └─ maze_results.csv
+└─ OLD/
+│   ├─ edge_speed_distance_by_trial.R 
+│   ├─ edges.R
+│   ├─ fmasteredges.R 
+│   ├─ masteredges.R
+│   └─ personality.R
 ```
